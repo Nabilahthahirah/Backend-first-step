@@ -7,6 +7,9 @@ const findAll = async (admin_id) => {
       where: {
         admin_id: admin_id,
       },
+      include: {
+        product: true,
+      },
     });
 
     if (!allWarehouse[0]) {
@@ -68,8 +71,6 @@ const update = async (params) => {
 };
 
 const destroy = async (params) => {
-  // try {
-    console.log(params.id);
   const warehouse = await prisma.warehouse.findUnique({
     where: { id: +params.id },
   });
@@ -84,9 +85,6 @@ const destroy = async (params) => {
   return {
     deletedAddress: warehouse,
   };
-  // } catch (error) {
-  //   throw new CustomAPIError(`Error creating category: ${error.message}`, 500);
-  // }
 };
 
 module.exports = {

@@ -1,12 +1,15 @@
 const { 
-  fetchAllProducts, 
-  postFullProduct, 
-  fetchSingleProductById, 
-  deleteFullProduct,
-  postProductDetail,
-  deleteOneProductDetail,
-  fetchAllProductsByCategory,
-  fetchAllProductsBySearch
+  fetchAllProducts,
+    postFullProduct,
+    fetchSingleProductById,
+    deleteFullProduct,
+    postProductDetail,
+    deleteOneProductDetail,
+    fetchAllProductsByCategory,
+    fetchAllProductsBySearch,
+    fetchAllProductsAdmin,
+    postProduct,
+    putProductWithDetail 
 } = require("../services/product.service");
 const CustomAPIError = require("../middlewares/custom-error");
 const cloudinary = require('../../lib/cloudinary');
@@ -128,6 +131,20 @@ const deleteProduct = async (req, res) => {
   });
 };
 
+const getAllProductsAdmin = async (req, res) => {
+  try {
+    const products = await fetchAllProductsAdmin();
+    return res.json({
+      status: "success",
+      message: "All products are presented",
+      data: products,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 // Product Detail
 const createProductDetail = async (req, res) => {
   try {
@@ -182,6 +199,94 @@ const deleteProductDetail = async (req, res) => {
   });
 };
 
+const createProductWithDetail = async (req, res) => {
+  try {
+    upload.single('photo')(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ error: err.message });
+      }
+
+      const { name, description, type, category_id, warehouse_id, color, stock, price, weight } = req.body;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ error: 'No image provided' });
+      }
+
+      try {
+        cloudinary.uploader.upload(file.path, async (cloudinaryErr, result) => {
+          if (cloudinaryErr) {
+            return res.status(400).json({ error: cloudinaryErr.message });
+          }
+
+          const photo = result.secure_url;
+
+          const productData = {
+            name,
+            description,
+            type,
+            category_id: +category_id,
+            warehouse_id: +warehouse_id,
+            product_detail: [{ color, stock: +stock, price: +price, weight: +weight, photo }],
+          };
+
+          try {
+            const createdProduct = await postProduct(productData);
+            return res.status(201).json({ data: createdProduct });
+          } catch (error) {
+            return res.status(500).json({ error: `Error creating product: ${error.message}` });
+          }
+        });
+      } catch (error) {
+        return res.status(500).json({ error: `Error uploading image: ${error.message}` });
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+}
+
+const updateProductWithDetail = async (req, res) => {
+  try {
+    upload.single('photo')(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ error: err.message });
+      }
+
+      const { id } = req.params;
+      const { name, description, type, category_id, warehouse_id, color, stock, price, weight } = req.body;
+      const file = req.file;
+
+      try {
+        let photo;
+
+        if (file) {
+          const cloudinaryResult = await cloudinary.uploader.upload(file.path);
+          photo = cloudinaryResult.secure_url;
+        }
+
+        const updatedProduct = await putProductWithDetail(id, {
+          name,
+          description,
+          type,
+          category_id,
+          warehouse_id,
+          color,
+          stock,
+          price,
+          weight,
+          photo,
+        });
+
+        return res.status(200).json({ data: updatedProduct });
+      } catch (error) {
+        return res.status(500).json({ error: `Error updating product: ${error.message}` });
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+}
 
 
 module.exports = {
@@ -192,5 +297,8 @@ module.exports = {
   createProductDetail,
   deleteProductDetail,
   getAllProductsByCategory,
-  getAllProductsBySearch
+  getAllProductsBySearch,
+  getAllProductsAdmin,
+  createProductWithDetail,
+  updateProductWithDetail
 };

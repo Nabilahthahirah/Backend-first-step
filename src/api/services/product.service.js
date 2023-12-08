@@ -27,6 +27,14 @@ const fetchAllProducts = async (page, pageSize) => {
   }
 };
 
+const fetchAllProductsAdmin = async () => { //solved
+  const products = await prisma.product.findMany({
+    include: { product_detail: true },
+  });
+
+  return products;
+};
+
 const fetchAllProductsByCategory = async (category_id, page, pageSize) => {
   try {
     const products = await prisma.product.findMany({
@@ -248,6 +256,86 @@ const deleteOneProductDetail = async (id) => {
   };
 };
 
+const postProduct = async (data) => {
+  try {
+    const { name, description, type, category_id, warehouse_id, product_detail } = data;
+
+    const createdProduct = await prisma.product.create({
+      data: {
+        name,
+        description,
+        type,
+        category_id: +category_id,
+        warehouse_id: +warehouse_id,
+        product_detail: {
+          create: product_detail.map(detail => ({
+            color: detail.color || "default_color",
+            stock: detail.stock || 0,
+            price: detail.price || 0,
+            weight: detail.weight || 0,
+            photo: detail.photo || "default_photo_url",
+          })),
+        },
+      },
+      include: {
+        product_detail: true,  // Menyertakan informasi produk_detail dalam respons
+      },
+    });
+    console.log(createdProduct, "Produk dibuat");
+    return createdProduct;
+  } catch (error) {
+    throw new Error(`Error dalam membuat produk: ${error.message}`);
+  }
+};
+
+const putProductWithDetail = async (id, data) => {
+  try {
+    const {
+      name,
+      description,
+      type,
+      category_id,
+      warehouse_id,
+      color,
+      stock,
+      price,
+      weight,
+      photo,
+    } = data;
+
+    const updatedProduct = await prisma.product.update({
+      where: { id: +id },
+      data: {
+        name,
+        description,
+        type,
+        category_id: +category_id,
+        warehouse_id: +warehouse_id,
+        product_detail: {
+          update: {
+            where: { id:+id},
+            data: {
+              color,
+              stock: +stock,
+              price: +price,
+              weight: +weight,
+              photo,
+            },
+          },
+        },
+      },
+      include: {
+        product_detail: true,
+      },
+    });
+
+    return updatedProduct;
+  } catch (error) {
+    throw new CustomAPIError(`Error updating product: ${error.message}`, 500);
+  }
+};
+
+
 module.exports = {
     fetchAllProducts,
     postFullProduct,
@@ -256,5 +344,8 @@ module.exports = {
     postProductDetail,
     deleteOneProductDetail,
     fetchAllProductsByCategory,
-    fetchAllProductsBySearch
+    fetchAllProductsBySearch,
+    fetchAllProductsAdmin,
+    postProduct,
+    putProductWithDetail 
   };

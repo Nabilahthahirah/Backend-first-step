@@ -3,7 +3,8 @@ const CustomAPIError = require("../middlewares/custom-error");
 const bcrypt = require("bcryptjs");
 const { generateToken } = require("../../lib/jwt");
 
-const loginAdmin = async (username, password) => {
+const loginAdmin = async (payload) => {
+  const { username, password } = payload;
   try {
     const admin = await prisma.admin.findUnique({ where: { username } });
     if (!admin) {
@@ -16,7 +17,6 @@ const loginAdmin = async (username, password) => {
     }
 
     const token = generateToken(admin);
-    console.log(token, "<<<<<token");
     return token;
   } catch (error) {
     console.log(error);
@@ -61,12 +61,12 @@ const putAdmin = async (params, payload) => {
       where: {
         id: +id,
       },
-      data: { 
-        username, 
+      data: {
+        username,
         password: hashedPassword,
         email,
-        address
-     },
+        address,
+      },
     });
 
     return result;
@@ -97,5 +97,5 @@ module.exports = {
   loginAdmin,
   postAdmin,
   putAdmin,
-  destroyAdmin
+  destroyAdmin,
 };
