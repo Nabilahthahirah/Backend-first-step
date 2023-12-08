@@ -130,7 +130,7 @@ model Category {
 
 model Warehouse {
   id              Int      @id @default(autoincrement())
-  admin_id        Int 
+  admin_id        Int? 
   warehouse_name  String 
   address         String 
   province_id     Int
@@ -138,7 +138,7 @@ model Warehouse {
   created_at    DateTime      @default(now())
   updated_at    DateTime      @default(now())
   product         Product[] 
-  admin           Admin   @relation(fields: [admin_id], references: [id])
+  admin           Admin?   @relation(fields: [admin_id], references: [id])
   province        Province  @relation(fields: [province_id], references: [id])
   city            City  @relation(fields: [city_id], references: [id])  
 }
@@ -152,7 +152,6 @@ model Admin {
   created_at    DateTime      @default(now())
   updated_at    DateTime      @default(now())
   warehouse     Warehouse[]
-  upload        Upload[]
 }
 
 model Upload {
@@ -180,11 +179,18 @@ model Payment {
   cart_id              Int 
   payment_method_id    Int 
   total_price          Int
-  upload               Upload[]
+  status  paymentStatus
+  upload               String?
   payment_method       Payment_Method @relation(fields: [payment_method_id], references: [id]) 
   order                Order @relation(fields: [order_id], references:[id] )
   created_at  DateTime      @default(now())
   updated_at  DateTime      @default(now())
+}
+
+enum paymentStatus {
+  accepted
+  rejected
+  waiting
 }
 
 model Order {

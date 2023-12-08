@@ -2,9 +2,7 @@ const prisma = require("../../lib/prisma");
 const CustomAPIError = require("../middlewares/custom-error");
 
 const findAll = async (params) => {
-  const { name } = params;
   const payment = await prisma.payment.findMany({
-    include: { upload: true },
   });
   return payment;
 };
@@ -59,7 +57,7 @@ const findOneByOrder = async (params) => {
 
 const create = async (params) => {
   try {
-    const { order_id, payment_method_id, cart_id, total_price } = params;
+    const { order_id, payment_method_id, cart_id, total_price, upload } = params;
     console.log("params", params);
     const payment = await prisma.payment.create({
       data: {
@@ -67,6 +65,8 @@ const create = async (params) => {
         cart_id: +cart_id,
         payment_method_id: +payment_method_id,
         total_price: +total_price,
+        status: "waiting",
+        upload: upload,
       },
     });
     return payment;
@@ -78,21 +78,30 @@ const create = async (params) => {
 
 const update = async (pathParams, params) => {
   try {
+    const { status } = params;
     const { id } = pathParams;
-    const { order_id, cart_id, payment_method_id, total_price } = params;
-    console.log("params", params);
-    const updatePayment = await prisma.payment.update({
+
+    const existingPayment = await prisma.payment.findUnique({
       where: {
         id: +id,
       },
-      data: {
-        order_id: +order_id,
-        cart_id: +cart_id,
-        payment_method_id: +payment_method_id,
-        total_price: +total_price,
-      },
     });
-    return updatePayment;
+
+    if (existingPayment) {
+      const updatePayment = await prisma.payment.update({
+        where: {
+          id: +id,
+        },
+        data: {
+          order_id: existingPayment.order_id,
+          cart_id: existingPayment.cart_id,
+          payment_method_id: existingPayment.payment_method_id,
+          total_price: existingPayment.total_price,
+          status: status,
+        },
+      });
+      return updatePayment;
+    }
   } catch (error) {
     console.log(error);
     throw new CustomAPIError(`${error.message}`, error.statusCode || 500);
