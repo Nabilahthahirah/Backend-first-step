@@ -57,7 +57,7 @@ const findOneByOrder = async (params) => {
 
 const create = async (params) => {
   try {
-    const { order_id, payment_method_id, cart_id, total_price, upload } = params;
+    const { order_id, payment_method_id, cart_id, total_price } = params;
     console.log("params", params);
     const payment = await prisma.payment.create({
       data: {
@@ -66,7 +66,6 @@ const create = async (params) => {
         payment_method_id: +payment_method_id,
         total_price: +total_price,
         status: "waiting",
-        upload: upload,
       },
     });
     return payment;
